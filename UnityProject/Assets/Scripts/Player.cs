@@ -3,6 +3,7 @@ using UnityEngine.UI;
 
 public class Player : MonoBehaviour
 {
+    #region 欄位
     // 宣告變數 (定義欄位 field)
     // 修飾詞 欄位類型 欄位名稱 (指定 值);
 
@@ -23,6 +24,12 @@ public class Player : MonoBehaviour
     public AudioClip soundCoin;
     [Header("介面")]
     public Text textCoin;
+    [Header("攻擊位置")]
+    public Transform pointAtk;
+    [Header("攻擊長度"), Range(0, 3)]
+    public float rangeAtk = 1.5f;
+    [Header("攻擊力"), Range(0, 300)]
+    public float attack = 20;
 
     private int coin;
 
@@ -30,37 +37,19 @@ public class Player : MonoBehaviour
     private AudioSource aud;    // 音效來源 (喇叭)
     private Rigidbody2D r2d;    // 剛體：物理
     private Transform tra;      // 變形
+    #endregion
 
-    // 定義方法 method
-    // 修飾詞 傳回類型 方法名稱 (參數) { 敘述 }
-
+    #region 方法
     public void Move()
     {
-        // 練習判斷按 D 輸出往右走
-        // 練習判斷按 A 輸出往左走
-        if (Input.GetKeyDown(KeyCode.D))
-        {
-            ani.SetBool("跑步開關", true);
-            tra.eulerAngles = new Vector3(0, 0, 0);     // 變形.歐拉角度 = 新 三維向量 (0, 0, 0)
-        }
-        if (Input.GetKeyUp(KeyCode.D))
-        {
-            ani.SetBool("跑步開關", false);
-        }
-        if (Input.GetKeyDown(KeyCode.A))
-        {
-            ani.SetBool("跑步開關", true);
-            tra.eulerAngles = new Vector3(0, 180, 0);     // 變形.歐拉角度 = 新 三維向量 (0, 180, 0)
-        }
-        if (Input.GetKeyUp(KeyCode.A))
-        {
-            ani.SetBool("跑步開關", false);
-        }
+        if (Input.GetKeyDown(KeyCode.D)) tra.eulerAngles = new Vector3(0, 0, 0);     // 變形.歐拉角度 = 新 三維向量 (0, 0, 0)
+        if (Input.GetKeyDown(KeyCode.A)) tra.eulerAngles = new Vector3(0, 180, 0);     // 變形.歐拉角度 = 新 三維向量 (0, 180, 0)
 
         if (ani.GetCurrentAnimatorStateInfo(0).IsName("攻擊")) return;    // 如果 目前動畫 名稱是 "攻擊" 跳出
-        
+
         float h = Input.GetAxis("Horizontal");                            // 水平軸向：A、左：-1，D、右：1，不按：0
         r2d.AddForce(new Vector2(speed * h, 0));
+        ani.SetBool("跑步開關", h != 0);
     }
 
     public void Jump()
@@ -82,6 +71,9 @@ public class Player : MonoBehaviour
         {
             ani.SetTrigger("攻擊觸發");
             aud.PlayOneShot(soundAtk, 1.5f);
+
+            RaycastHit2D hit = Physics2D.Raycast(pointAtk.position, pointAtk.right, rangeAtk, 1 << 9);  // 碰撞資訊 = 物理.射線碰撞(中心點，方向，長度，圖層)
+            if (hit) hit.collider.GetComponent<Enemy>().Damage(attack);
         }
     }
 
@@ -96,7 +88,9 @@ public class Player : MonoBehaviour
         ani.SetBool("死亡開關", true);
         aud.PlayOneShot(soundDead, 2f);
     }
+    #endregion
 
+    #region 事件
     // 事件 - 在特定時間會執行的方法
     // 開始：遊戲播放時執行一次
     private void Start()
@@ -106,6 +100,8 @@ public class Player : MonoBehaviour
         aud = GetComponent<AudioSource>();
         r2d = GetComponent<Rigidbody2D>();
         tra = GetComponent<Transform>();
+
+        pointAtk = tra.GetChild(0);     // 變形.取得子物件(編號) *編號從 0 開始
     }
 
     // 更新：一秒執行約 60 次 (60FPS)
@@ -148,4 +144,12 @@ public class Player : MonoBehaviour
             textCoin.text = "金幣：" + coin;    // 更新介面
         }
     }
+
+    // 繪製圖示 (開發者使用)
+    private void OnDrawGizmos()
+    {
+        Gizmos.color = Color.red;                                           // 圖示.顏色 = 顏色.紅色
+        Gizmos.DrawRay(pointAtk.position, pointAtk.right * rangeAtk);       // 圖示.繪製射線(中心點，方向 * 長度)
+    }
+    #endregion
 }
